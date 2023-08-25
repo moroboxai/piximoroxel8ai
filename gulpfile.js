@@ -95,6 +95,12 @@ gulp.task('umd', () => {
         .pipe(gulp.dest('lib/umd'));
 });
 
+gulp.task('build-sample', () => {
+    return gulp.src('./sample/game.ts')
+        .pipe(ts.createProject('tsconfig.json', { declaration: false })())
+        .pipe(gulp.dest('./sample'));
+});
+
 gulp.task('build', gulp.series('cjs', 'es', 'umd-dev', 'umd'));
 
 gulp.task('dev', gulp.series('umd-dev'));
