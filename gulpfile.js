@@ -30,7 +30,6 @@ const libWebpackConfig = (lib, output, options, library, prod) => ({
     },
     plugins: [
         new webpack.DefinePlugin({
-            "process.env.FENGARICONF": "void 0",
             "typeof process": JSON.stringify("undefined")
         })
     ],

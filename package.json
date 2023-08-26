@@ -27,7 +27,6 @@
   "homepage": "https://github.com/moroboxai/piximoroxel8ai#readme",
   "devDependencies": {
     "concurrently": "^7.0.0",
-    "fengari": "^0.1.4",
     "gulp": "^4.0.2",
     "gulp-typescript": "^6.0.0-alpha.1",
     "moroboxai-game-sdk": "^0.1.0-alpha.14",
