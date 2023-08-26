@@ -1,9 +1,4 @@
-assets:
-    - name: palette
-      path: palette.png
-    - name: tilemap
-      path: tilemap.png
-    - name: MoroboxAIRetro
-      path: MoroboxAIRetro.fnt
+# Define the JS module used to boot the game
 boot: PixiMoroxel8AI
+# Define the main script of the game
 main: game.js

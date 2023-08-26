@@ -1,9 +1,11 @@
 // In the real world: import { IPixiMoroxel8AI } from 'piximoroxel8ai';
 import { IPixiMoroxel8AI } from '../lib';
-const PIXIJS: typeof PIXI = require("pixi.js");
 
 // Instance of the VM
 var _vm: IPixiMoroxel8AI;
+
+// Instance of pixi.js
+var _PIXI: typeof PIXI;
 
 var container: PIXI.Container;
 var bunnyTexture: PIXI.Texture;
@@ -15,6 +17,7 @@ var bunnyTexture: PIXI.Texture;
 export function init(vm: IPixiMoroxel8AI) {
     console.log("init called", vm);
     _vm = vm;
+    _PIXI = vm.PIXI;
 }
 
 /**
@@ -25,7 +28,7 @@ export function load(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         console.log("load assets");
         // use PIXI.Loader to load assets
-        const loader = new PIXIJS.Loader();
+        const loader = new _PIXI.Loader();
 
         // load bunny.png
         loader.add("bunny", _vm.player.gameServer.href(`assets/bunny.png`));
@@ -54,12 +57,12 @@ export function reset() {
     }
 
     // Create a new clean container
-    container = new PIXIJS.Container();
+    container = new _PIXI.Container();
     _vm.stage.addChild(container);
 
     // Create a 5x5 grid of bunnies
     for (let i = 0; i < 25; i++) {
-        const bunny = new PIXIJS.Sprite(bunnyTexture);
+        const bunny = new _PIXI.Sprite(bunnyTexture);
         bunny.anchor.set(0.5);
         bunny.x = (i % 5) * 40;
         bunny.y = Math.floor(i / 5) * 40;

@@ -10,6 +10,8 @@ export interface AssetHeader {
 }
 
 export interface IPixiMoroxel8AI {
+    // The pixi.js module
+    PIXI: typeof PIXI;
     // Screen width
     SWIDTH: number;
     // Screen height
@@ -244,6 +246,8 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     }
 
     // IPixiMoroxel8AI interface
+    get PIXI(): typeof PIXI { return PIXI }
+
     get SWIDTH(): number { return constants.SCREEN_WIDTH; }
 
     get SHEIGHT(): number { return constants.SCREEN_HEIGHT; }
