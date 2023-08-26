@@ -38,7 +38,7 @@ As you can see, the folder contains both `game.ts`, and `game.js`.
 Your game can be written with TypeScript for a more type safe coding, but it must be converted to plain JavaScript for being loadable by PixiMoroxel8AI.
 
 The `header.yml` defines how the game is loaded:
-  * `boot` must be the name of a JS module loaded in the page, that exports a boot function compatible with MoroboxAI, here `PixiMoroxel8AI`.
+  * `boot` must be the name of a JS module loaded in the page, that exports a boot function compatible with MoroboxAI, here PixiMoroxel8AI.
   * `main` is simply the relative path to your game script.
 
 ```yml
