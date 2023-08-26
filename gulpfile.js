@@ -6,7 +6,8 @@ const ts = require('gulp-typescript');
 const webpack = require('webpack');
 const gulpWebpack = require('webpack-stream');
 
-const webpackConfig = (lib, output, options, library, prod) => ({
+// Webpack config for the library
+const libWebpackConfig = (lib, output, options, library, prod) => ({
     context: path.resolve(__dirname, 'src'),
     entry: './index.ts',
     mode: prod ? 'production' : 'development',
@@ -36,6 +37,32 @@ const webpackConfig = (lib, output, options, library, prod) => ({
     ...options
 });
 
+// Webpack config for building the sample game
+const sampleWebpackConfig = {
+    context: path.resolve(__dirname, 'sample'),
+    entry: './game.ts',
+    mode: 'development',
+    target: 'web',
+    node: false,
+    module: {
+        rules: [{
+            test: /\.tsx?$/,
+            use: 'ts-loader',
+            exclude: /node_modules/
+        }]
+    },
+    output: {
+        filename: "game.js",
+        path: path.resolve(__dirname, 'sample'),
+        library: {
+            type: 'umd'
+        }
+    },
+    resolve: {
+        extensions: ['.ts', '.js']
+    }
+};
+
 gulp.task('cjs', () => {
     return gulp.src('./src/index.ts')
         .pipe(ts.createProject('tsconfig.json')())
@@ -44,7 +71,7 @@ gulp.task('cjs', () => {
 
 gulp.task('es', () => {
     return gulp.src('./src/index.ts')
-        .pipe(gulpWebpack(webpackConfig(
+        .pipe(gulpWebpack(libWebpackConfig(
             'lib/es',
             'index.js',
             {
@@ -64,7 +91,7 @@ gulp.task('es', () => {
 
 gulp.task('umd-dev', () => {
     return gulp.src('./src/index.ts')
-        .pipe(gulpWebpack(webpackConfig(
+        .pipe(gulpWebpack(libWebpackConfig(
             'lib/umd',
             'piximoroxel8ai.js',
             {},
@@ -80,7 +107,7 @@ gulp.task('umd-dev', () => {
 
 gulp.task('umd', () => {
     return gulp.src('./src/index.ts')
-        .pipe(gulpWebpack(webpackConfig(
+        .pipe(gulpWebpack(libWebpackConfig(
             'lib/umd',
             'piximoroxel8ai.min.js',
             {},
@@ -97,7 +124,7 @@ gulp.task('umd', () => {
 
 gulp.task('build-sample', () => {
     return gulp.src('./sample/game.ts')
-        .pipe(ts.createProject('tsconfig.json', { declaration: false })())
+        .pipe(gulpWebpack(sampleWebpackConfig, webpack))
         .pipe(gulp.dest('./sample'));
 });
 

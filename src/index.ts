@@ -9,131 +9,89 @@ export interface AssetHeader {
 }
 
 export interface IPixiMoroxel8AI {
-
+    // Instance of the player
+    player: MoroboxAIGameSDK.IPlayer
 }
 
 interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
     assets?: AssetHeader[];
     main?: string;
-    language?: string;
     script?: string;
 }
 
-interface GameScript {
-    language: 'javascript' | 'lua',
-    script: string;
+// The game when loaded
+interface IGame {
+    // Initialize the game with PixiMoroxel8AI
+    init?: (vm: IPixiMoroxel8AI) => void
+    // Load the game assets
+    load?: () => Promise<void>,
+    // Tick the game
+    tick?: () => void
 }
 
 /**
- * Load the main script indicated in game header.
+ * Load the game indicated in header.
  * @param {ExtendedGameHeader} header - game header
  * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
- * @returns {Promise} - content of the main script
+ * @returns {Promise} - loaded game
  */
-function loadMain(header: ExtendedGameHeader, gameServer: MoroboxAIGameSDK.IGameServer): Promise<GameScript> {
-    return new Promise<GameScript>((resolve, reject) => {
-        if (header.script !== undefined) {
-            if (header.language === undefined) {
-                return reject('header is missing language attribute');
-            }
-
-            if (header.language !== 'javascript' && header.language !== 'lua') {
-                return reject(`unknown script language ${header.language} in header`);
-            }
-
-            return resolve({
-                language: header.language,
-                script: header.script
-            });
-        }
-
+function loadGame(header: ExtendedGameHeader, gameServer: MoroboxAIGameSDK.IGameServer): Promise<IGame> {
+    return new Promise<IGame>((resolve, reject) => {
         if (header.main === undefined) {
             return reject('header is missing main attribute with the path to your main script');
         }
 
-        return gameServer.get(header.main).then(data => resolve({
-            language: header.main!.endsWith('.js') ? 'javascript' : 'lua',
-            script: data
-        }));
-    });
-}
-
-/**
- * Load a list of assets from the game server.
- * @param {AssetHeader[]} assets - list of assets to load
- * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
- * @param {function} assetLoaded - function called for each loaded asset
- * @returns {Promise} - a promise
- */
-function loadAssets(assets: AssetHeader[] | undefined, gameServer: MoroboxAIGameSDK.IGameServer, assetLoaded: (asset: AssetHeader, res: PIXI.LoaderResource) => void): Promise<void> {
-    return new Promise((resolve) => {
-        if (assets === undefined || assets.length === 0) {
-            // no assets to load
-            resolve();
-            return;
-        }
-
-        console.log("loading assets...");
-        const loader = new PIXI.Loader();
-
-        // add each asset to the loader
-        const validAssets = new Array<AssetHeader>();
-        assets.forEach(_ => {
-            if (_.name === undefined) {
-                console.error('skip asset without name');
-                return;
-            }
-
-            if (_.path === undefined) {
-                console.error('skip asset without path');
-                return;
-            }
-
-            console.log(`loading ${_.path}...`);
-            validAssets.push(_);
-            loader.add(gameServer.href(`assets/${_.path}`));
+        // use the game server to download main script
+        return gameServer.get(header.main).then(data => {
+            // parse the main script to JavaScript
+            let game: IGame = {};
+            (new Function('exports', data))(game);
+            return resolve(game);
         });
-
-        loader.onComplete.add(() => {
-            // dispatch loaded assets
-            validAssets.forEach(_ => {
-                assetLoaded(_, loader.resources[gameServer.href(`assets/${_.path}`)]);
-            });
-
-            console.log('assets loaded');
-            resolve()
-        });
-        loader.load();
     });
 }
 
 /**
  * Load and initialize the game.
- * @param {MoroboxAIGameSDK.IPlayer} player - player instance 
+ * @param {MoroboxAIGameSDK.IPlayer} player - instance of the player
+ * @param {IPixiMoroxel8AI} vm - instance of PixiMoroxel8AI
  * @param {Function} assetLoaded - function called for each loaded asset
- * @returns {Promise} - content of the main script
+ * @returns {Promise} - game instance
  */
-function initGame(player: MoroboxAIGameSDK.IPlayer, assetLoaded: (asset: AssetHeader, res: PIXI.LoaderResource) => void): Promise<GameScript> {
-    return new Promise<GameScript>((resolve) => {
+function initGame(player: MoroboxAIGameSDK.IPlayer, vm: IPixiMoroxel8AI, assetLoaded: (asset: AssetHeader, res: PIXI.LoaderResource) => void): Promise<IGame> {
+    return new Promise<IGame>((resolve) => {
+        // the player contains the game header
         const header = player.header as ExtendedGameHeader;
 
-        return loadMain(
+        // first load and parse the game
+        return loadGame(
             header,
             player.gameServer
-        ).then((data) => {
-            return loadAssets(
-                header.assets,
-                player.gameServer,
-                assetLoaded
-            ).then(() => resolve(data));
+        ).then((game: IGame) => {
+            console.log("loaded game with hooks", game);
+
+            // initialize the game
+            if (game.init !== undefined) {
+                game.init(vm);
+            }
+
+            // load game assets
+            if (game.load !== undefined) {
+                return game.load().then(() => {
+                    resolve(game);
+                })
+            }
+
+            return resolve(game);
         });
     });
 }
 
-class piximoroxel8ai implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
+class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
+    // Instance of the player
     private _player: MoroboxAIGameSDK.IPlayer;
-    // Main Lua script of the game
-    private _gameScript?: GameScript;
+    // Instance of the game
+    private _game?: IGame;
 
     private _app: PIXI.Application;
     private _ticker = (delta: number) => this._tick(delta);
@@ -156,9 +114,9 @@ class piximoroxel8ai implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         });
 
         // init the game and load assets
-        initGame(player, (asset, res) => this._handleAssetLoaded(asset, res)).then((data) => {
+        initGame(player, this, (asset, res) => this._handleAssetLoaded(asset, res)).then((game: IGame) => {
             // received the game script
-            this._gameScript = data;
+            this._game = game;
             this._initPixiJS();
 
             // calling ready will call play
@@ -224,15 +182,10 @@ class piximoroxel8ai implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         this._app.renderer.resize(realWidth, realHeight);
     }
 
-    // Ipiximoroxel8ai interface
-    P1: number = 0;
-    P2: number = 1;
-    BLEFT: number = 0;
-    BRIGHT: number = 1;
-    BUP: number = 2;
-    BDOWN: number = 3;
+    // IPixiMoroxel8AI interface
+    get player(): MoroboxAIGameSDK.IPlayer { return this._player; }
 }
 
 export const boot: MoroboxAIGameSDK.IBoot = (player: any) => {
-    return new piximoroxel8ai(player);
+    return new PixiMoroxel8AI(player);
 };
