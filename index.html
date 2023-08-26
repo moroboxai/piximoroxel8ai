@@ -3,6 +3,7 @@
 <head>
     <title>PixiMoroxel8AI Sample</title>
     <script type="text/javascript" src="./node_modules/moroboxai-player-web/lib/umd/moroboxai-player-web.js"></script>
+    <!-- Use https://cdn.jsdelivr.net/npm/piximoroxel8ai@latest/lib/umd/piximoroxel8ai.min.js in production -->
     <script type="text/javascript" src="./lib/umd/piximoroxel8ai.js"></script>
 </head>
 
@@ -14,6 +15,7 @@
         console.log(`moroboxai-player-web v${MoroboxAIPlayer.VERSION}`);
 
         player = MoroboxAIPlayer.init(document.getElementById("player"), {
+            // Replace with URL to your header.yml
             url: `./sample`,
             resizable: false,
             autoPlay: true,
