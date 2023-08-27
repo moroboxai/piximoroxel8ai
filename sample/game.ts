@@ -1,3 +1,4 @@
+import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 // In the real world: import { IPixiMoroxel8AI } from 'piximoroxel8ai';
 import { IPixiMoroxel8AI } from '../lib';
 
@@ -83,8 +84,26 @@ export function reset() {
  * Ticks the game.
  * @param {number} delta - elapsed time
  */
-export function tick(delta: number) {
-    // rotate the container!
-    // use delta to create frame-independent transform
-    container.rotation -= 0.01 * delta;
+export function tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) {
+    // Agent can rotate the bunnies left or right
+    if (inputs[0].left) {
+        container.angle -= 1 * delta;
+    } else if (inputs[0].right) {
+        container.angle += 1 * delta;
+    }
+}
+
+export interface IGameState {
+    x: number;
+    y: number;
+    angle: number;
+}
+
+export function getStateForAgent(): IGameState {
+    // Send the position and angle of the container to agent
+    return {
+        x: container.x,
+        y: container.y,
+        angle: container.angle
+    };
 }

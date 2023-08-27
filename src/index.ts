@@ -36,8 +36,14 @@ interface IGame {
     load?: () => Promise<void>;
     // Reset the state of the game
     reset?: () => void;
+    // Save the state of the game
+    saveState?: () => object;
+    // Load the state of the game
+    loadState?: (state: object) => void;
+    // Get the game state for an agent
+    getStateForAgent?: () => object;
     // Tick the game
-    tick?: (delta: number) => void;
+    tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) => void;
 }
 
 /**
@@ -173,27 +179,18 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     }
 
     // Physics loop
-    private _update(deltaTime: number) {
-        if (this._game === undefined || this._game.tick === undefined) return;
-
-        try {
-            this._game.tick(deltaTime);
-        } catch (e) {
-            if (!this._displayedTickError) {
-                this._displayedTickError = true;
-                console.error(e);
-            }
-        }
-    }
-
     private _tick(delta: number) {
+        if (this.ticker === undefined) {
+            return;
+        }
+
         this._physicsAccumulator += delta * this._player.speed;
         while (this._physicsAccumulator > PHYSICS_TIMESTEP) {
-            this._update(PHYSICS_TIMESTEP);
+            this.ticker(PHYSICS_TIMESTEP);
             this._physicsAccumulator -= PHYSICS_TIMESTEP;
         }
 
-        this._update(PHYSICS_TIMESTEP);
+        this.ticker(PHYSICS_TIMESTEP);
 
         // Render the back stage to back buffer
         this._app.renderer.render(this._clearSprite, this._backBuffer.buffer);
@@ -205,6 +202,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
     // IGame interface
     speed: number = 1;
+    ticker?: (delta: number) => void;
 
     help(): string {
         return "";
@@ -236,6 +234,12 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         this._app.destroy(true, { children: true, texture: true, baseTexture: true });
     }
 
+    reset(): void {
+        if (this._game?.reset !== undefined) {
+            this._game.reset();
+        }
+    }
+
     resize(): void {
         // Scale the game view according to parent div
         const realWidth = this._player.width;
@@ -243,6 +247,33 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
         this._app.renderer.resize(realWidth, realHeight);
         this._backBuffer.sprite.scale.set(realWidth / this.SWIDTH, realHeight / this.SHEIGHT);
+    }
+
+    saveState(): object {
+        return this._game?.saveState !== undefined ? this._game?.saveState() : {};
+    }
+
+    loadState(state: object) {
+        if (this._game?.loadState !== undefined) {
+            this._game?.loadState(state);
+        }
+    }
+
+    getStateForAgent(): object {
+        return this._game?.getStateForAgent !== undefined ? this._game?.getStateForAgent() : {};
+    }
+
+    tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) {
+        if (this._game?.tick !== undefined) {
+            try {
+                this._game?.tick(inputs, delta);
+            } catch (e) {
+                if (!this._displayedTickError) {
+                    this._displayedTickError = true;
+                    console.error(e);
+                }
+            }
+        }
     }
 
     // IPixiMoroxel8AI interface

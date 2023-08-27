@@ -36,8 +36,34 @@ const libWebpackConfig = (lib, output, options, library, prod) => ({
     ...options
 });
 
+// Webpack config for building the sample agent
+const agentWebpackConfig = {
+    context: path.resolve(__dirname, 'sample'),
+    entry: './agent.ts',
+    mode: 'development',
+    target: 'web',
+    node: false,
+    module: {
+        rules: [{
+            test: /\.tsx?$/,
+            use: 'ts-loader',
+            exclude: /node_modules/
+        }]
+    },
+    output: {
+        filename: "agent.js",
+        path: path.resolve(__dirname, 'sample'),
+        library: {
+            type: 'umd'
+        }
+    },
+    resolve: {
+        extensions: ['.ts', '.js']
+    }
+};
+
 // Webpack config for building the sample game
-const sampleWebpackConfig = {
+const gameWebpackConfig = {
     context: path.resolve(__dirname, 'sample'),
     entry: './game.ts',
     mode: 'development',
@@ -99,7 +125,8 @@ gulp.task('umd-dev', () => {
                     type: 'umd',
                     name: 'PixiMoroxel8AI'
                 }
-            }
+            },
+            false
         ), webpack))
         .pipe(gulp.dest('lib/umd'));
 });
@@ -121,12 +148,21 @@ gulp.task('umd', () => {
         .pipe(gulp.dest('lib/umd'));
 });
 
-gulp.task('build-sample', () => {
+
+gulp.task('build-lib', gulp.series('cjs', 'es', 'umd-dev', 'umd'));
+
+gulp.task('build-game', () => {
     return gulp.src('./sample/game.ts')
-        .pipe(gulpWebpack(sampleWebpackConfig, webpack))
+        .pipe(gulpWebpack(gameWebpackConfig, webpack))
         .pipe(gulp.dest('./sample'));
 });
 
-gulp.task('build', gulp.series('cjs', 'es', 'umd-dev', 'umd'));
+gulp.task('build-agent', () => {
+    return gulp.src('./sample/agent.ts')
+        .pipe(gulpWebpack(agentWebpackConfig, webpack))
+        .pipe(gulp.dest('./sample'));
+});
 
-gulp.task('dev', gulp.series('umd-dev'));
+gulp.task('build-sample', gulp.series('build-agent', 'build-game'));
+
+gulp.task('build', gulp.series('build-lib', 'build-sample'));
