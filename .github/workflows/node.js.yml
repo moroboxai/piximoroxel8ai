@@ -57,7 +57,6 @@ jobs:
           cp node_modules/moroboxai-player-web/lib/umd/moroboxai-player-web.min.js build/web/node_modules/moroboxai-player-web/lib/umd/
           cp lib/umd/piximoroxel8ai.js build/web/lib/umd/
           cp index.html build/web/
-          cp -r sample build/web/
           touch build/web/.nojekyll
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
