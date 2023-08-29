@@ -1,0 +1,73 @@
+<html>
+
+<head>
+    <title>PixiMoroxel8AI Sample</title>
+    <!-- Use https://cdn.jsdelivr.net/npm/moroboxai-player-web@latest/lib/umd/moroboxai-player-web.min.js in production -->
+    <script type="text/javascript" src="./node_modules/moroboxai-player-sdk/lib/umd/moroboxai-player-sdk.js"></script>
+    <script type="text/javascript" src="./node_modules/moroboxai-player-web/lib/umd/moroboxai-player-web.js"></script>
+    <!-- Use https://cdn.jsdelivr.net/npm/piximoroxel8ai@latest/lib/umd/piximoroxel8ai.min.js in production -->
+    <script type="text/javascript" src="./lib/umd/piximoroxel8ai.js"></script>
+</head>
+
+<body>
+    <div id="player1"></div>
+    <div id="player2"></div>
+</body>
+<script type="text/javascript">
+    (function () {
+        console.log(`moroboxai-player-web v${MoroboxAIPlayer.VERSION}`);
+
+        player1 = MoroboxAIPlayer.init(document.getElementById("player1"), {
+            // Replace with URL to your header.yml
+            url: `./sample`,
+            resizable: false,
+            autoPlay: true,
+            width: 256,
+            height: 256,
+            onReady: () => console.log("ready")
+        });
+
+        player2 = MoroboxAIPlayer.init(document.getElementById("player2"), {
+            // Replace with URL to your header.yml
+            url: `./sample`,
+            resizable: false,
+            autoPlay: true,
+            width: 256,
+            height: 256,
+            onReady: () => console.log("ready")
+        });
+
+        player1.getController(0).loadAgent({
+            // Replace with URL of your agent
+            url: `./sample/agent.js`
+        });
+
+        player2.getController(0).loadAgent({
+            // Replace with URL of your agent
+            url: `./sample/agent.js`
+        });
+
+        meta = new MoroboxAIPlayerSDK.MetaPlayer([player1, player2]);
+    })();
+</script>
+
+<style type="text/css">
+    body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #player {
+        background-color: black;
+        background-size: cover;
+        width: 256px;
+        height: 256px;
+    }
+</style>
+
+</html>
