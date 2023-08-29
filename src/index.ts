@@ -2,7 +2,6 @@ import * as MoroboxAIGameSDK from 'moroboxai-game-sdk';
 import * as constants from "./constants";
 import * as PIXI from 'pixi.js';
 
-const PHYSICS_TIMESTEP = 0.01;
 
 export interface AssetHeader {
     name?: string;
@@ -131,7 +130,6 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     // If the game has been attached and is playing
     private _isPlaying: boolean = false;
     private _displayedTickError: boolean = false;
-    private _physicsAccumulator: number = 0;
 
     constructor(player: MoroboxAIGameSDK.IPlayer) {
         this._player = player;
@@ -180,24 +178,9 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
     // Physics loop
     private _tick(delta: number) {
-        if (this.ticker === undefined) {
-            return;
+        if (this.ticker !== undefined) {
+            this.ticker(delta);
         }
-
-        this._physicsAccumulator += delta * this._player.speed;
-        while (this._physicsAccumulator > PHYSICS_TIMESTEP) {
-            this.ticker(PHYSICS_TIMESTEP);
-            this._physicsAccumulator -= PHYSICS_TIMESTEP;
-        }
-
-        this.ticker(PHYSICS_TIMESTEP);
-
-        // Render the back stage to back buffer
-        this._app.renderer.render(this._clearSprite, this._backBuffer.buffer);
-        this._app.renderer.render(this._backStage, this._backBuffer.buffer);
-
-        // Render the back buffer to screen
-        this._app.renderer.render(this._backBuffer.sprite);
     }
 
     // IGame interface
@@ -274,6 +257,13 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
                 }
             }
         }
+
+        // Render the back stage to back buffer
+        this._app.renderer.render(this._clearSprite, this._backBuffer.buffer);
+        this._app.renderer.render(this._backStage, this._backBuffer.buffer);
+
+        // Render the back buffer to screen
+        this._app.renderer.render(this._backBuffer.sprite);
     }
 
     // IPixiMoroxel8AI interface
