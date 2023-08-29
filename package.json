@@ -1,6 +1,6 @@
 {
   "name": "piximoroxel8ai",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Run PixiJS games written for MoroboxAI",
   "author": "moroboxai",
   "main": "./lib/cjs/index.js",
@@ -10,6 +10,7 @@
   "types": "./lib/index.d.ts",
   "scripts": {
     "build:lib": "gulp build-lib",
+    "build:agent": "gulp build-agent",
     "build:sample": "gulp build-sample",
     "build": "gulp build",
     "prepublish": "npm run build",
@@ -29,8 +30,11 @@
     "concurrently": "^7.6.0",
     "gulp": "^4.0.2",
     "gulp-typescript": "^6.0.0-alpha.1",
+    "moroboxai-editor-sdk": "^0.1.1-alpha.4",
+    "moroboxai-editor-web": "^0.1.1-alpha.4",
     "moroboxai-game-sdk": "^0.1.0-alpha.27",
-    "moroboxai-player-web": "^0.1.0-alpha.20",
+    "moroboxai-player-sdk": "^0.1.0-alpha.21",
+    "moroboxai-player-web": "^0.1.0-alpha.21",
     "path": "^0.12.7",
     "pixi.js": "^5.3.12",
     "ts-loader": "^9.4.4",

@@ -159,7 +159,12 @@ gulp.task('build-game', () => {
 
 gulp.task('build-agent', () => {
     return gulp.src('./sample/agent.ts')
-        .pipe(gulpWebpack(agentWebpackConfig, webpack))
+        .pipe(ts.createProject('tsconfig.json', {
+            module: "ES6",
+            target: "es6",
+            strict: false,
+            declaration: false
+        })())
         .pipe(gulp.dest('./sample'));
 });
 

@@ -137,7 +137,8 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
         this._app = new PIXI.Application({
             backgroundColor: 0x0,
-            resolution: window.devicePixelRatio || 1,
+            resolution: 1,
+            autoDensity: true,
             width: this._player.width,
             height: this._player.height,
             clearBeforeRender: false,
@@ -151,6 +152,8 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         this._clearSprite.width = constants.SCREEN_WIDTH;
         this._clearSprite.height = constants.SCREEN_HEIGHT;
         this._clearSprite.tint = 0;
+
+        this.resize();
 
         // init the game and load assets
         initGame(player, this).then((game: IGame) => {
@@ -225,9 +228,11 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
     resize(): void {
         // Scale the game view according to parent div
+        const resolution = 1;
         const realWidth = this._player.width;
         const realHeight = this._player.height;
 
+        this._app.renderer.resolution = resolution;
         this._app.renderer.resize(realWidth, realHeight);
         this._backBuffer.sprite.scale.set(realWidth / this.SWIDTH, realHeight / this.SHEIGHT);
     }
