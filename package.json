@@ -9,9 +9,6 @@
   "jsdelivr": "./lib/umd/piximoroxel8ai.min.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "build:lib": "gulp build-lib",
-    "build:agent": "gulp build-agent",
-    "build:sample": "gulp build-sample",
     "build": "gulp build",
     "prepublish": "npm run build",
     "dev": "concurrently \"npm run build\" \"vite\""

@@ -148,15 +148,6 @@ gulp.task('umd', () => {
         .pipe(gulp.dest('lib/umd'));
 });
 
-
-gulp.task('build-lib', gulp.series('cjs', 'es', 'umd-dev', 'umd'));
-
-gulp.task('build-game', () => {
-    return gulp.src('./sample/game.ts')
-        .pipe(gulpWebpack(gameWebpackConfig, webpack))
-        .pipe(gulp.dest('./sample'));
-});
-
 gulp.task('build-agent', () => {
     return gulp.src('./sample/agent.ts')
         .pipe(ts.createProject('tsconfig.json', {
@@ -168,6 +159,4 @@ gulp.task('build-agent', () => {
         .pipe(gulp.dest('./sample'));
 });
 
-gulp.task('build-sample', gulp.series('build-agent', 'build-game'));
-
-gulp.task('build', gulp.series('build-lib', 'build-sample'));
+gulp.task('build', gulp.series('cjs', 'es', 'umd-dev', 'umd'));
