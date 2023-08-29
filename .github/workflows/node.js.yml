@@ -51,10 +51,10 @@ jobs:
       - name: Pack
         run: |
           mkdir -v -p build/web/node_modules/moroboxai-player-sdk/lib/umd
-          mkdir -v -p build/web/node_modules/moroboxai-player-web/lib/umd
+          mkdir -v -p build/web/nodemodules/moroboxai-player-web/lib/umd
           mkdir -v -p build/web/lib/umd
-          cp node_modules/moroboxai-player-sdk/lib/umd/moroboxai-player-sdk.js build/web/node_modules/moroboxai-player-sdk/lib/umd/
-          cp node_modules/moroboxai-player-web/lib/umd/moroboxai-player-web.js build/web/node_modules/moroboxai-player-web/lib/umd/
+          cp node_modules/moroboxai-player-sdk/lib/umd/moroboxai-player-sdk.js build/web/node_modules/
+          cp node_modules/moroboxai-player-web/lib/umd/moroboxai-player-web.js build/web/nodemodules/moroboxai-player-web/lib/umd/
           cp lib/umd/piximoroxel8ai.js build/web/lib/umd/
           cp index.html build/web/
           cp -r sample build/web/
