@@ -45,6 +45,8 @@ interface IGame {
     tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) => void;
 }
 
+const GAME_FUNCTIONS = ["init", "load", "reset", "saveState", "loadState", "getStateForAgent", "tick"];
+
 /**
  * Load the game indicated in header.
  * @param {ExtendedGameHeader} header - game header
@@ -61,7 +63,7 @@ function loadGame(header: ExtendedGameHeader, gameServer: MoroboxAIGameSDK.IGame
         return gameServer.get(header.main).then(data => {
             // parse the main script to JavaScript
             let game: IGame = {};
-            (new Function('exports', data))(game);
+            (new Function('exports', `${data}; ${GAME_FUNCTIONS.map(name => `if (typeof ${name} !== "undefined") exports.${name} = ${name}`).join(';')}`))(game);
             return resolve(game);
         });
     });
