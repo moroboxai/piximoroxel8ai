@@ -2,6 +2,7 @@ import * as MoroboxAIGameSDK from 'moroboxai-game-sdk';
 import * as constants from "./constants";
 import * as PIXI from 'pixi.js';
 
+export const VERSION = "0.1.0-alpha.6";
 
 export interface AssetHeader {
     name?: string;
@@ -29,8 +30,6 @@ interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
 
 // The game when loaded
 interface IGame {
-    // Initialize the game with PixiMoroxel8AI
-    init?: (vm: IPixiMoroxel8AI) => void;
     // Load the game assets
     load?: () => Promise<void>;
     // Reset the state of the game
@@ -45,15 +44,16 @@ interface IGame {
     tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) => void;
 }
 
-const GAME_FUNCTIONS = ["init", "load", "reset", "saveState", "loadState", "getStateForAgent", "tick"];
+const GAME_FUNCTIONS = ["load", "reset", "saveState", "loadState", "getStateForAgent", "tick"];
 
 /**
  * Load the game indicated in header.
  * @param {ExtendedGameHeader} header - game header
+ * @param {IPixiMoroxel8AI} vm - instance of the VM
  * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
  * @returns {Promise} - loaded game
  */
-function loadGame(header: ExtendedGameHeader, gameServer: MoroboxAIGameSDK.IGameServer): Promise<IGame> {
+function loadGame(header: ExtendedGameHeader, vm: IPixiMoroxel8AI, gameServer: MoroboxAIGameSDK.IGameServer): Promise<IGame> {
     return new Promise<IGame>((resolve, reject) => {
         if (header.main === undefined) {
             return reject('header is missing main attribute with the path to your main script');
@@ -63,7 +63,18 @@ function loadGame(header: ExtendedGameHeader, gameServer: MoroboxAIGameSDK.IGame
         return gameServer.get(header.main).then(data => {
             // parse the main script to JavaScript
             let game: IGame = {};
-            (new Function('exports', `${data}\n; ${GAME_FUNCTIONS.map(name => `if (typeof ${name} !== "undefined") exports.${name} = ${name}`).join(';')}`))(game);
+            (new Function(
+                'vm',
+                'stage',
+                'PIXI',
+                'exports',
+                `${data}\n; ${GAME_FUNCTIONS.map(name => `if (typeof ${name} !== "undefined") exports.${name} = ${name}`).join(';')}`
+            ))(
+                vm,
+                vm.stage,
+                vm.PIXI,
+                game
+            );
             return resolve(game);
         });
     });
@@ -84,14 +95,10 @@ function initGame(player: MoroboxAIGameSDK.IPlayer, vm: IPixiMoroxel8AI): Promis
         // first load and parse the game
         return loadGame(
             header,
+            vm,
             player.gameServer
         ).then((game: IGame) => {
             console.log("loaded game with hooks", game);
-
-            // initialize the game
-            if (game.init !== undefined) {
-                game.init(vm);
-            }
 
             // load game assets
             if (game.load !== undefined) {
