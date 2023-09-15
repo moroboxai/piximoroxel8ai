@@ -29,6 +29,6 @@
     "typescript": "^4.6.3",
     "vite": "^2.8.6",
     "pixi.js": "^5.3.12",
-    "moroboxai-game-sdk": "^0.1.0-alpha.29",
+    "moroboxai-game-sdk": "^0.1.0-alpha.29"
   }
 }
