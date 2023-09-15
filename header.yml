@@ -1,0 +1,4 @@
+# Defines the JS module used to boot the game
+boot: PixiMoroxel8AI
+# Defines the main script of the game
+main: game.js
