@@ -12,7 +12,11 @@
         type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/moroboxai-editor-web@latest/lib/umd/moroboxai-editor-web.min.js"
     ></script>
-  <script type="module" crossorigin src="/piximoroxel8ai/umd/piximoroxel8ai.min.js"></script>
+    <!-- For running the sample -->
+    <script
+        type="text/javascript"
+        src="./lib/umd/piximoroxel8ai.min.js"
+    ></script>
 </head>
 
 <body class="vertical">
@@ -28,7 +32,37 @@
         <div>moroboxai-editor-web v<span id="moroboxai-editor-web-version"></span></div>
     </div>
 </body>
+<script type="text/javascript">
+    (function(){
+        document.getElementById("moroboxai-game-sdk-version").innerText = MoroboxAIPlayer.GAME_SDK_VERSION;
+        document.getElementById("moroboxai-player-sdk-version").innerText = MoroboxAIPlayer.SDK_VERSION;
+        document.getElementById("moroboxai-player-web-version").innerText = MoroboxAIPlayer.VERSION;
+        document.getElementById("moroboxai-editor-sdk-version").innerText = MoroboxAIEditor.SDK_VERSION;
+        document.getElementById("moroboxai-editor-web-version").innerText = MoroboxAIEditor.VERSION;
 
+        const player = MoroboxAIPlayer.init(document.getElementById("player"), {
+            // Replace with URL to your header.yml
+            url: "./header.yml",
+            resizable: false,
+            autoPlay: true,
+            width: 256,
+            height: 256,
+            onReady: () => console.log("ready")
+        });
+
+        MoroboxAIEditor.init({
+            element: document.getElementById("editor"),
+            url: "https://raw.githubusercontent.com/moroboxai/moroboxai-games/master/piximoroxel8ai-sample/sample/agent.js",
+            width: "500px",
+            height: "400px",
+            onLoad: (language, value) => player.getController(0).loadAgent({
+                language: language,
+                code: value
+            }),
+            onUnload: () => player.getController(0).unloadAgent()
+        })
+    })();
+</script>
 
 <style type="text/css">
     body {
