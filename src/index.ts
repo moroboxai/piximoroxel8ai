@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from 'moroboxai-game-sdk';
 import * as constants from "./constants";
 import * as PIXI from 'pixi.js';
 
-export const VERSION = "0.1.0-alpha.6";
+export const VERSION = "0.1.0-alpha.7";
 
 export interface AssetHeader {
     name?: string;
@@ -163,20 +163,24 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         this._clearSprite.tint = 0;
 
         this.resize();
+    }
 
-        // init the game and load assets
-        initGame(player, this).then((game: IGame) => {
-            // loaded the game
-            this._game = game;
-            this._initPixiJS();
+    // Load and initialize the game
+    init(): Promise<void> {
+        return new Promise<void>(resolve => {
+            // init the game and load assets
+            initGame(this._player, this).then((game: IGame) => {
+                // loaded the game
+                this._game = game;
+                this._initPixiJS();
 
-            // reset the game state
-            if (this._game.reset !== undefined) {
-                this._game.reset();
-            }
+                // reset the game state
+                if (this._game.reset !== undefined) {
+                    this._game.reset();
+                }
 
-            // calling ready will call play
-            player.ready();
+                return resolve();
+            });
         });
     }
 
@@ -293,5 +297,10 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 }
 
 export const boot: MoroboxAIGameSDK.IBoot = (player: any) => {
-    return new PixiMoroxel8AI(player);
+    const game = new PixiMoroxel8AI(player);
+    return new Promise<MoroboxAIGameSDK.IGame>(resolve => {
+        game.init().then(() => {
+            return resolve(game);
+        });
+    });
 };
