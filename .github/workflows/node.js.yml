@@ -53,6 +53,8 @@ jobs:
           mkdir -v -p build/web/lib/umd
           cp lib/umd/piximoroxel8ai.min.js build/web/lib/umd/
           cp index.html build/web/
+          cp header.yml build/web/
+          cp game.js build/web/
           touch build/web/.nojekyll
       - name: Upload Artifact
         if: github.ref == 'refs/heads/main'
