@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.9";
+export const VERSION = "0.1.0-alpha.10";
 
 export interface AssetHeader {
     name?: string;
@@ -179,7 +179,7 @@ export interface IVMOptions {
     // Instance of the player
     player: MoroboxAIGameSDK.IPlayer;
     // Directly pass a game to PixiMoroxel8AI
-    game?: MoroboxAIGameSDK.IGame;
+    game?: IGame;
 }
 
 class VM implements MoroboxAIGameSDK.IGame, IVM {
