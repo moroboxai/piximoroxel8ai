@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.13";
+export const VERSION = "0.1.0-alpha.14";
 
 export interface AssetHeader {
     name?: string;
@@ -43,8 +43,6 @@ export interface IGame {
     init?: (vm: IPixiMoroxel8AI) => void;
     // Load the game assets
     load?: () => Promise<void>;
-    // Reset the state of the game
-    reset?: () => void;
     // Save the state of the game
     saveState?: () => object;
     // Load the state of the game
@@ -58,7 +56,6 @@ export interface IGame {
 const GAME_FUNCTIONS = [
     "init",
     "load",
-    "reset",
     "saveState",
     "loadState",
     "getStateForAgent",
@@ -67,15 +64,19 @@ const GAME_FUNCTIONS = [
 
 /**
  * Load the game indicated in header.
- * @param {IPixiMoroxel8AI} vm - instance of the PixiMoroxel8AI
+ * @param {PixiMoroxel8AI} vm - instance of the PixiMoroxel8AI
  * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
  * @returns {Promise} - loaded game
  */
 function loadGame(
-    vm: IPixiMoroxel8AI,
+    vm: PixiMoroxel8AI,
     gameServer: MoroboxAIGameSDK.IGameServer
 ): Promise<IGame> {
     return new Promise<IGame>((resolve, reject) => {
+        if (vm.options.game !== undefined) {
+            return resolve(vm.options.game);
+        }
+
         const main = vm.header.main;
         if (main === undefined) {
             return reject(
@@ -113,10 +114,6 @@ function initGame(
     vm: PixiMoroxel8AI
 ): Promise<IGame> {
     return new Promise<IGame>((resolve) => {
-        if (vm.options.game !== undefined) {
-            return resolve(vm.options.game);
-        }
-
         // first load and parse the game
         return loadGame(vm, player.gameServer).then((game: IGame) => {
             console.log("loaded game with hooks", game);
@@ -264,11 +261,6 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
                 this._game = game;
                 this._initPixiJS();
 
-                // reset the game state
-                if (this._game.reset !== undefined) {
-                    this._game.reset();
-                }
-
                 return resolve();
             });
         });
@@ -325,12 +317,6 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
             texture: true,
             baseTexture: true
         });
-    }
-
-    reset(): void {
-        if (this._game?.reset !== undefined) {
-            this._game.reset();
-        }
     }
 
     resize(): void {
