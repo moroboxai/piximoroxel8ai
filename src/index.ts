@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.12";
+export const VERSION = "0.1.0-alpha.13";
 
 export interface AssetHeader {
     name?: string;
@@ -29,6 +29,12 @@ export interface IPixiMoroxel8AI {
     readonly player: MoroboxAIGameSDK.IPlayer;
     // Root container
     readonly stage: PIXI.Container;
+    // Renderer of pixi.js
+    readonly renderer: PIXI.Renderer;
+    // Back buffer rendered to screen
+    readonly backBuffer: PIXI.RenderTexture;
+    // Auto clear the back buffer before each render
+    autoClearBackBuffer: boolean;
 }
 
 // The game when loaded
@@ -176,6 +182,22 @@ class VMProxy implements IPixiMoroxel8AI {
     get stage(): PIXI.Container {
         return this._vm.stage;
     }
+
+    get renderer(): PIXI.Renderer {
+        return this._vm.renderer;
+    }
+
+    get backBuffer(): PIXI.RenderTexture {
+        return this._vm.backBuffer;
+    }
+
+    get autoClearBackBuffer(): boolean {
+        return this._vm.autoClearBackBuffer;
+    }
+
+    set autoClearBackBuffer(value: boolean) {
+        this._vm.autoClearBackBuffer = value;
+    }
 }
 
 export interface IPixiMoroxel8AIOptions {
@@ -201,6 +223,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     // If the game has been attached and is playing
     private _isPlaying: boolean = false;
     private _displayedTickError: boolean = false;
+    autoClearBackBuffer: boolean = true;
 
     constructor(options: IPixiMoroxel8AIOptions) {
         this.options = options;
@@ -355,7 +378,12 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         }
 
         // Render the back stage to back buffer
-        this._app.renderer.render(this._clearSprite, this._backBuffer.buffer);
+        if (this.autoClearBackBuffer) {
+            this._app.renderer.render(
+                this._clearSprite,
+                this._backBuffer.buffer
+            );
+        }
         this._app.renderer.render(this._backStage, this._backBuffer.buffer);
 
         // Render the back buffer to screen
@@ -385,6 +413,14 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
     get stage(): PIXI.Container {
         return this._backStage;
+    }
+
+    get renderer(): PIXI.Renderer {
+        return this._app.renderer;
+    }
+
+    get backBuffer(): PIXI.RenderTexture {
+        return this._backBuffer.buffer;
     }
 }
 
