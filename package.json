@@ -1,34 +1,37 @@
 {
-  "name": "piximoroxel8ai",
-  "version": "0.1.0-alpha.8",
-  "description": "Run PixiJS games written for MoroboxAI",
-  "author": "moroboxai",
-  "main": "./lib/cjs/index.cjs",
-  "module": "./lib/es/index.js",
-  "unpkg": "./lib/umd/piximoroxel8ai.min.js",
-  "jsdelivr": "./lib/umd/piximoroxel8ai.min.js",
-  "types": "./lib/es/index.d.ts",
-  "scripts": {
-      "build": "vite build --config vite.config.lib.js & tsc",
-      "preview": "vite",
-      "prepublish": "npm run build"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/moroboxai/piximoroxel8ai.git"
-  },
-  "keywords": [],
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/moroboxai/piximoroxel8ai/issues"
-  },
-  "homepage": "https://github.com/moroboxai/piximoroxel8ai#readme",
-  "devDependencies": {
-    "@types/node": "^20.6.0",
-    "path": "^0.12.7",
-    "typescript": "^4.6.3",
-    "vite": "^2.8.6",
-    "pixi.js": "^5.3.12",
-    "moroboxai-game-sdk": "^0.1.0-alpha.29"
-  }
+    "name": "piximoroxel8ai",
+    "version": "0.1.0-alpha.8",
+    "description": "Run PixiJS games written for MoroboxAI",
+    "author": "moroboxai",
+    "main": "./lib/cjs/index.cjs",
+    "module": "./lib/es/index.js",
+    "unpkg": "./lib/umd/piximoroxel8ai.min.js",
+    "jsdelivr": "./lib/umd/piximoroxel8ai.min.js",
+    "types": "./lib/es/index.d.ts",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build --config vite.config.lib.js && tsc && vite build",
+        "preview": "vite preview",
+        "prepublish": "npm run build"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moroboxai/piximoroxel8ai.git"
+    },
+    "keywords": [],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/moroboxai/piximoroxel8ai/issues"
+    },
+    "homepage": "https://github.com/moroboxai/piximoroxel8ai#readme",
+    "dependencies": {
+        "pixi.js": "^5.3.12",
+        "moroboxai-game-sdk": "^0.1.0-alpha.29"
+    },
+    "devDependencies": {
+        "@types/node": "^20.6.0",
+        "path": "^0.12.7",
+        "typescript": "^4.6.3",
+        "vite": "^2.8.6"
+    }
 }

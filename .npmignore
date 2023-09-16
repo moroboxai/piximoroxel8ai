@@ -1,6 +1,7 @@
 index.html
 assets/
 header.yml
+game.js
 
 .DS_Store
 npm-debug.log

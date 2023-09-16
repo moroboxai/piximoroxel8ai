@@ -1,6 +1,6 @@
-import * as MoroboxAIGameSDK from 'moroboxai-game-sdk';
+import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
-import * as PIXI from 'pixi.js';
+import * as PIXI from "pixi.js";
 
 export const VERSION = "0.1.0-alpha.8";
 
@@ -9,27 +9,32 @@ export interface AssetHeader {
     path?: string;
 }
 
-export interface IPixiMoroxel8AI {
-    // The pixi.js module
-    PIXI: typeof PIXI;
-    // Screen width
-    SWIDTH: number;
-    // Screen height
-    SHEIGHT: number;
-    // Instance of the player
-    player: MoroboxAIGameSDK.IPlayer;
-    // Root container
-    stage: PIXI.Container;
+export interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
+    main?: string;
 }
 
-interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
-    assets?: AssetHeader[];
-    main?: string;
-    script?: string;
+/**
+ * Interface for the VM.
+ */
+export interface IVM {
+    // Header of the game
+    readonly header: ExtendedGameHeader;
+    // The pixi.js module
+    readonly PIXI: typeof PIXI;
+    // Screen width
+    readonly SWIDTH: number;
+    // Screen height
+    readonly SHEIGHT: number;
+    // Instance of the player
+    readonly player: MoroboxAIGameSDK.IPlayer;
+    // Root container
+    readonly stage: PIXI.Container;
 }
 
 // The game when loaded
-interface IGame {
+export interface IGame {
+    // Initialize the game
+    init?: (vm: IVM) => void;
     // Load the game assets
     load?: () => Promise<void>;
     // Reset the state of the game
@@ -44,37 +49,48 @@ interface IGame {
     tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) => void;
 }
 
-const GAME_FUNCTIONS = ["load", "reset", "saveState", "loadState", "getStateForAgent", "tick"];
+const GAME_FUNCTIONS = [
+    "init",
+    "load",
+    "reset",
+    "saveState",
+    "loadState",
+    "getStateForAgent",
+    "tick"
+];
 
 /**
  * Load the game indicated in header.
- * @param {ExtendedGameHeader} header - game header
- * @param {IPixiMoroxel8AI} vm - instance of the VM
+ * @param {IVM} vm - instance of the VM
  * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
  * @returns {Promise} - loaded game
  */
-function loadGame(header: ExtendedGameHeader, vm: IPixiMoroxel8AI, gameServer: MoroboxAIGameSDK.IGameServer): Promise<IGame> {
+function loadGame(
+    vm: IVM,
+    gameServer: MoroboxAIGameSDK.IGameServer
+): Promise<IGame> {
     return new Promise<IGame>((resolve, reject) => {
-        if (header.main === undefined) {
-            return reject('header is missing main attribute with the path to your main script');
+        const main = vm.header.main;
+        if (main === undefined) {
+            return reject(
+                "header is missing main attribute with the path to your main script"
+            );
         }
 
         // use the game server to download main script
-        return gameServer.get(header.main).then(data => {
+        return gameServer.get(main).then((data) => {
             // parse the main script to JavaScript
             let game: IGame = {};
-            (new Function(
-                'vm',
-                'stage',
-                'PIXI',
-                'exports',
-                `${data}\n; ${GAME_FUNCTIONS.map(name => `if (typeof ${name} !== "undefined") exports.${name} = ${name}`).join(';')}`
-            ))(
-                vm,
-                vm.stage,
-                vm.PIXI,
-                game
-            );
+            new Function(
+                "vm",
+                "stage",
+                "PIXI",
+                "exports",
+                `${data}\n; ${GAME_FUNCTIONS.map(
+                    (name) =>
+                        `if (typeof ${name} !== "undefined") exports.${name} = ${name}`
+                ).join(";")}`
+            )(vm, vm.stage, vm.PIXI, game);
             return resolve(game);
         });
     });
@@ -83,28 +99,29 @@ function loadGame(header: ExtendedGameHeader, vm: IPixiMoroxel8AI, gameServer: M
 /**
  * Load and initialize the game.
  * @param {MoroboxAIGameSDK.IPlayer} player - instance of the player
- * @param {IPixiMoroxel8AI} vm - instance of PixiMoroxel8AI
- * @param {Function} assetLoaded - function called for each loaded asset
+ * @param {VM} vm - instance of PixiMoroxel8AI
  * @returns {Promise} - game instance
  */
-function initGame(player: MoroboxAIGameSDK.IPlayer, vm: IPixiMoroxel8AI): Promise<IGame> {
+function initGame(player: MoroboxAIGameSDK.IPlayer, vm: VM): Promise<IGame> {
     return new Promise<IGame>((resolve) => {
-        // the player contains the game header
-        const header = player.header as ExtendedGameHeader;
+        if (vm.options.game !== undefined) {
+            return resolve(vm.options.game);
+        }
 
         // first load and parse the game
-        return loadGame(
-            header,
-            vm,
-            player.gameServer
-        ).then((game: IGame) => {
+        return loadGame(vm, player.gameServer).then((game: IGame) => {
             console.log("loaded game with hooks", game);
+
+            // init the game
+            if (game.init !== undefined) {
+                game.init(vm.proxy);
+            }
 
             // load game assets
             if (game.load !== undefined) {
                 return game.load().then(() => {
                     resolve(game);
-                })
+                });
             }
 
             return resolve(game);
@@ -125,12 +142,54 @@ class BackBuffer {
     }
 }
 
-class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
+// Proxy of VM
+class VMProxy implements IVM {
+    private _vm: IVM;
+
+    constructor(vm: IVM) {
+        this._vm = vm;
+    }
+
+    get header(): ExtendedGameHeader {
+        return this._vm.header;
+    }
+
+    get PIXI(): typeof PIXI {
+        return this._vm.PIXI;
+    }
+
+    get SWIDTH(): number {
+        return this._vm.SWIDTH;
+    }
+
+    get SHEIGHT(): number {
+        return this._vm.SHEIGHT;
+    }
+
+    get player(): MoroboxAIGameSDK.IPlayer {
+        return this._vm.player;
+    }
+
+    get stage(): PIXI.Container {
+        return this._vm.stage;
+    }
+}
+
+export interface IVMOptions {
+    // Instance of the player
+    player: MoroboxAIGameSDK.IPlayer;
+    // Directly pass a game to PixiMoroxel8AI
+    game?: MoroboxAIGameSDK.IGame;
+}
+
+class VM implements MoroboxAIGameSDK.IGame, IVM {
     // Instance of the player
     private _player: MoroboxAIGameSDK.IPlayer;
     // Instance of the game
     private _game?: IGame;
 
+    readonly options: IVMOptions;
+    readonly proxy: IVM;
     private _app: PIXI.Application;
     private _backBuffer: BackBuffer;
     private _backStage: PIXI.Container;
@@ -140,8 +199,10 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     private _isPlaying: boolean = false;
     private _displayedTickError: boolean = false;
 
-    constructor(player: MoroboxAIGameSDK.IPlayer) {
-        this._player = player;
+    constructor(options: IVMOptions) {
+        this.options = options;
+        this.proxy = new VMProxy(this);
+        this._player = options.player;
         PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
         this._app = new PIXI.Application({
@@ -154,7 +215,10 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
             antialias: false
         });
 
-        this._backBuffer = new BackBuffer(constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT);
+        this._backBuffer = new BackBuffer(
+            constants.SCREEN_WIDTH,
+            constants.SCREEN_HEIGHT
+        );
         this._backStage = new PIXI.Container();
 
         this._clearSprite = new PIXI.Sprite(PIXI.Texture.WHITE);
@@ -167,7 +231,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
     // Load and initialize the game
     init(): Promise<void> {
-        return new Promise<void>(resolve => {
+        return new Promise<void>((resolve) => {
             // init the game and load assets
             initGame(this._player, this).then((game: IGame) => {
                 // loaded the game
@@ -230,7 +294,11 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     }
 
     stop(): void {
-        this._app.destroy(true, { children: true, texture: true, baseTexture: true });
+        this._app.destroy(true, {
+            children: true,
+            texture: true,
+            baseTexture: true
+        });
     }
 
     reset(): void {
@@ -247,11 +315,16 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
 
         this._app.renderer.resolution = resolution;
         this._app.renderer.resize(realWidth, realHeight);
-        this._backBuffer.sprite.scale.set(realWidth / this.SWIDTH, realHeight / this.SHEIGHT);
+        this._backBuffer.sprite.scale.set(
+            realWidth / this.SWIDTH,
+            realHeight / this.SHEIGHT
+        );
     }
 
     saveState(): object {
-        return this._game?.saveState !== undefined ? this._game?.saveState() : {};
+        return this._game?.saveState !== undefined
+            ? this._game?.saveState()
+            : {};
     }
 
     loadState(state: object) {
@@ -261,7 +334,9 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     }
 
     getStateForAgent(): object {
-        return this._game?.getStateForAgent !== undefined ? this._game?.getStateForAgent() : {};
+        return this._game?.getStateForAgent !== undefined
+            ? this._game?.getStateForAgent()
+            : {};
     }
 
     tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) {
@@ -285,20 +360,41 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     }
 
     // IPixiMoroxel8AI interface
-    get PIXI(): typeof PIXI { return PIXI }
+    get header(): ExtendedGameHeader {
+        return this.player.header as ExtendedGameHeader;
+    }
 
-    get SWIDTH(): number { return constants.SCREEN_WIDTH; }
+    get PIXI(): typeof PIXI {
+        return PIXI;
+    }
 
-    get SHEIGHT(): number { return constants.SCREEN_HEIGHT; }
+    get SWIDTH(): number {
+        return constants.SCREEN_WIDTH;
+    }
 
-    get player(): MoroboxAIGameSDK.IPlayer { return this._player; }
+    get SHEIGHT(): number {
+        return constants.SCREEN_HEIGHT;
+    }
 
-    get stage(): PIXI.Container { return this._backStage; }
+    get player(): MoroboxAIGameSDK.IPlayer {
+        return this._player;
+    }
+
+    get stage(): PIXI.Container {
+        return this._backStage;
+    }
 }
 
-export const boot: MoroboxAIGameSDK.IBoot = (player: any) => {
-    const game = new PixiMoroxel8AI(player);
-    return new Promise<MoroboxAIGameSDK.IGame>(resolve => {
+export function init(options: IVMOptions): IVM {
+    return new VM(options);
+}
+
+// Boot function called by MoroboxAIPlayer
+export const boot: MoroboxAIGameSDK.IBoot = (
+    player: MoroboxAIGameSDK.IPlayer
+) => {
+    const game = new VM({ player });
+    return new Promise<MoroboxAIGameSDK.IGame>((resolve) => {
         game.init().then(() => {
             return resolve(game);
         });
