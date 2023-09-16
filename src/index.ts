@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.10";
+export const VERSION = "0.1.0-alpha.11";
 
 export interface AssetHeader {
     name?: string;
@@ -14,9 +14,9 @@ export interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
 }
 
 /**
- * Interface for the VM.
+ * Interface for the PixiMoroxel8AI.
  */
-export interface IVM {
+export interface IPixiMoroxel8AI {
     // Header of the game
     readonly header: ExtendedGameHeader;
     // The pixi.js module
@@ -34,7 +34,7 @@ export interface IVM {
 // The game when loaded
 export interface IGame {
     // Initialize the game
-    init?: (vm: IVM) => void;
+    init?: (vm: IPixiMoroxel8AI) => void;
     // Load the game assets
     load?: () => Promise<void>;
     // Reset the state of the game
@@ -61,12 +61,12 @@ const GAME_FUNCTIONS = [
 
 /**
  * Load the game indicated in header.
- * @param {IVM} vm - instance of the VM
+ * @param {IPixiMoroxel8AI} vm - instance of the PixiMoroxel8AI
  * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
  * @returns {Promise} - loaded game
  */
 function loadGame(
-    vm: IVM,
+    vm: IPixiMoroxel8AI,
     gameServer: MoroboxAIGameSDK.IGameServer
 ): Promise<IGame> {
     return new Promise<IGame>((resolve, reject) => {
@@ -99,10 +99,13 @@ function loadGame(
 /**
  * Load and initialize the game.
  * @param {MoroboxAIGameSDK.IPlayer} player - instance of the player
- * @param {VM} vm - instance of PixiMoroxel8AI
+ * @param {PixiMoroxel8AI} vm - instance of PixiMoroxel8AI
  * @returns {Promise} - game instance
  */
-function initGame(player: MoroboxAIGameSDK.IPlayer, vm: VM): Promise<IGame> {
+function initGame(
+    player: MoroboxAIGameSDK.IPlayer,
+    vm: PixiMoroxel8AI
+): Promise<IGame> {
     return new Promise<IGame>((resolve) => {
         if (vm.options.game !== undefined) {
             return resolve(vm.options.game);
@@ -142,11 +145,11 @@ class BackBuffer {
     }
 }
 
-// Proxy of VM
-class VMProxy implements IVM {
-    private _vm: IVM;
+// Proxy of PixiMoroxel8AI
+class VMProxy implements IPixiMoroxel8AI {
+    private _vm: IPixiMoroxel8AI;
 
-    constructor(vm: IVM) {
+    constructor(vm: IPixiMoroxel8AI) {
         this._vm = vm;
     }
 
@@ -175,21 +178,21 @@ class VMProxy implements IVM {
     }
 }
 
-export interface IVMOptions {
+export interface IPixiMoroxel8AIOptions {
     // Instance of the player
     player: MoroboxAIGameSDK.IPlayer;
     // Directly pass a game to PixiMoroxel8AI
     game?: IGame;
 }
 
-class VM implements MoroboxAIGameSDK.IGame, IVM {
+class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     // Instance of the player
     private _player: MoroboxAIGameSDK.IPlayer;
     // Instance of the game
     private _game?: IGame;
 
-    readonly options: IVMOptions;
-    readonly proxy: IVM;
+    readonly options: IPixiMoroxel8AIOptions;
+    readonly proxy: IPixiMoroxel8AI;
     private _app: PIXI.Application;
     private _backBuffer: BackBuffer;
     private _backStage: PIXI.Container;
@@ -199,7 +202,7 @@ class VM implements MoroboxAIGameSDK.IGame, IVM {
     private _isPlaying: boolean = false;
     private _displayedTickError: boolean = false;
 
-    constructor(options: IVMOptions) {
+    constructor(options: IPixiMoroxel8AIOptions) {
         this.options = options;
         this.proxy = new VMProxy(this);
         this._player = options.player;
@@ -385,15 +388,15 @@ class VM implements MoroboxAIGameSDK.IGame, IVM {
     }
 }
 
-export function init(options: IVMOptions): IVM {
-    return new VM(options);
+export function init(options: IPixiMoroxel8AIOptions): IPixiMoroxel8AI {
+    return new PixiMoroxel8AI(options);
 }
 
 // Boot function called by MoroboxAIPlayer
 export const boot: MoroboxAIGameSDK.IBoot = (
     player: MoroboxAIGameSDK.IPlayer
 ) => {
-    const game = new VM({ player });
+    const game = new PixiMoroxel8AI({ player });
     return new Promise<MoroboxAIGameSDK.IGame>((resolve) => {
         game.init().then(() => {
             return resolve(game);
