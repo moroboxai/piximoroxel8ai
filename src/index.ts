@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.15";
+export const VERSION = "0.1.0-alpha.16";
 
 export interface AssetHeader {
     name?: string;
@@ -50,7 +50,7 @@ export interface IGame {
     // Get the game state for an agent
     getStateForAgent?: () => object;
     // Tick the game
-    tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) => void;
+    tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number, render: boolean) => void;
 }
 
 const GAME_FUNCTIONS = [
@@ -361,7 +361,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number, render: boolean) {
         if (this._game?.tick !== undefined) {
             try {
-                this._game?.tick(inputs, delta);
+                this._game?.tick(inputs, delta, render);
             } catch (e) {
                 if (!this._displayedTickError) {
                     this._displayedTickError = true;
