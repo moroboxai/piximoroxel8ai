@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.20";
+export const VERSION = "0.1.0-alpha.21";
 
 export interface AssetHeader {
     name?: string;
@@ -246,6 +246,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         const aspectRatio = this.header.aspectRatio;
         if (aspectRatio !== undefined) {
             const [a, b] = aspectRatio.split("/").map(s => parseInt(s));
+            console.log(`desired ratio ${a}/${b} = ${a / b}`);
             if (a >= b) {
                 screenHeight = Math.round(screenWidth * b / a);
             } else {
