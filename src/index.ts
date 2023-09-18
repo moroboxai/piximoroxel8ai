@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.17";
+export const VERSION = "0.1.0-alpha.18";
 
 export interface AssetHeader {
     name?: string;
@@ -248,10 +248,12 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         // Resize the player
         const playerWidth = this._player.width;
         if (format === "1:1") {
-            this._player.resize({width: playerWidth, height: playerWidth})
+            this._player.width = playerWidth;
+            this._player.height = playerWidth;
         }
         else if (format === "16:9") {
-            this._player.resize({width: playerWidth, height: Math.ceil(playerWidth * 9 / 16)})
+            this._player.width = playerWidth;
+            this._player.height = Math.ceil(playerWidth * 9 / 16);
         }
 
         this._backBuffer = new BackBuffer(
