@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.19";
+export const VERSION = "0.1.0-alpha.20";
 
 export interface AssetHeader {
     name?: string;
@@ -252,6 +252,8 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
                 screenWidth = Math.round(screenHeight * a / b);
             }
         }
+
+        console.log(`game size ${screenWidth}x${screenHeight}`);
 
         this._backBuffer = new BackBuffer(
             screenWidth,
