@@ -2,7 +2,7 @@ import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
 
-export const VERSION = "0.1.0-alpha.14";
+export const VERSION = "0.1.0-alpha.15";
 
 export interface AssetHeader {
     name?: string;
@@ -238,14 +238,21 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
             antialias: false
         });
 
+        // Adapt the format
+        let screenWidth = constants.SCREEN_WIDTH_1_1;
+        const format = this._player.header?.format;
+        if (format === "16:9") {
+            screenWidth = constants.SCREEN_WIDTH_16_9;
+        }
+
         this._backBuffer = new BackBuffer(
-            constants.SCREEN_WIDTH,
+            screenWidth,
             constants.SCREEN_HEIGHT
         );
         this._backStage = new PIXI.Container();
 
         this._clearSprite = new PIXI.Sprite(PIXI.Texture.WHITE);
-        this._clearSprite.width = constants.SCREEN_WIDTH;
+        this._clearSprite.width = screenWidth;
         this._clearSprite.height = constants.SCREEN_HEIGHT;
         this._clearSprite.tint = 0;
 
@@ -351,7 +358,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
             : {};
     }
 
-    tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number) {
+    tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number, render: boolean) {
         if (this._game?.tick !== undefined) {
             try {
                 this._game?.tick(inputs, delta);
@@ -363,6 +370,10 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
             }
         }
 
+        if (!render) {
+            return;
+        }
+        
         // Render the back stage to back buffer
         if (this.autoClearBackBuffer) {
             this._app.renderer.render(
@@ -386,11 +397,11 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     }
 
     get SWIDTH(): number {
-        return constants.SCREEN_WIDTH;
+        return this._backBuffer.buffer.width;
     }
 
     get SHEIGHT(): number {
-        return constants.SCREEN_HEIGHT;
+        return this._backBuffer.buffer.height;
     }
 
     get player(): MoroboxAIGameSDK.IPlayer {
