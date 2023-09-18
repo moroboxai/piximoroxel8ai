@@ -1,7 +1,6 @@
 import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
-export {version} from "../package.json";
 
 export const VERSION = "0.1.0-alpha.19";
 
