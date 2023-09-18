@@ -1,8 +1,9 @@
 import * as MoroboxAIGameSDK from "moroboxai-game-sdk";
 import * as constants from "./constants";
 import * as PIXI from "pixi.js";
+export {version} from "../package.json";
 
-export const VERSION = "0.1.0-alpha.18";
+export const VERSION = "0.1.0-alpha.19";
 
 export interface AssetHeader {
     name?: string;
@@ -11,6 +12,8 @@ export interface AssetHeader {
 
 export interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
     main?: string;
+    // Desired aspect ratio based on the native resolution of PixiMoroxel8AI
+    aspectRatio?: string;
 }
 
 /**
@@ -239,31 +242,26 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         });
 
         // Adapt the format
-        let screenHeight = constants.SCREEN_HEIGHT_1_1;
-        const format = this._player.header?.format;
-        if (format === "16:9") {
-            screenHeight = constants.SCREEN_HEIGHT_16_9;
-        }
-
-        // Resize the player
-        const playerWidth = this._player.width;
-        if (format === "1:1") {
-            this._player.width = playerWidth;
-            this._player.height = playerWidth;
-        }
-        else if (format === "16:9") {
-            this._player.width = playerWidth;
-            this._player.height = Math.ceil(playerWidth * 9 / 16);
+        let screenWidth = constants.SCREEN_WIDTH;
+        let screenHeight = constants.SCREEN_HEIGHT;
+        const aspectRatio = this.header.aspectRatio;
+        if (aspectRatio !== undefined) {
+            const [a, b] = aspectRatio.split("/").map(s => parseInt(s));
+            if (a >= b) {
+                screenHeight = Math.round(screenWidth * b / a);
+            } else {
+                screenWidth = Math.round(screenHeight * a / b);
+            }
         }
 
         this._backBuffer = new BackBuffer(
-            constants.SCREEN_WIDTH,
+            screenWidth,
             screenHeight
         );
         this._backStage = new PIXI.Container();
 
         this._clearSprite = new PIXI.Sprite(PIXI.Texture.WHITE);
-        this._clearSprite.width = constants.SCREEN_WIDTH;
+        this._clearSprite.width = screenWidth;
         this._clearSprite.height = screenHeight;
         this._clearSprite.tint = 0;
 
@@ -302,6 +300,18 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
     // IGame interface
     speed: number = 1;
     ticker?: (delta: number) => void;
+
+    get width(): number {
+        return this._backBuffer.buffer.width;
+    }
+
+    get height(): number {
+        return this._backBuffer.buffer.height;
+    }
+
+    get scale(): number {
+        return constants.SCREEN_SCALE;
+    }
 
     help(): string {
         return "";
