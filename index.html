@@ -1,17 +1,7 @@
 <html>
     <head>
         <title>PixiMoroxel8AI Sample</title>
-        <!-- For the player -->
-        <script
-            type="text/javascript"
-            src="https://cdn.jsdelivr.net/npm/moroboxai-player-web@latest/lib/umd/moroboxai-player-web.min.js"
-        ></script>
-        <!-- For the editor -->
-        <script
-            type="text/javascript"
-            src="https://cdn.jsdelivr.net/npm/moroboxai-editor-web@latest/lib/umd/moroboxai-editor-web.min.js"
-        ></script>
-      <script type="module" crossorigin src="/piximoroxel8ai/assets/index.77b0d0d5.js"></script>
+      <script type="module" crossorigin src="/piximoroxel8ai/assets/index-9a9f16bb.js"></script>
     </head>
 
     <body class="vertical">
@@ -19,15 +9,14 @@
             <div id="player"></div>
             <div id="editor"></div>
         </div>
-        <div id="info">
+        <div class="info horizontal">
+            <button id="attach-player"></button>
+            <button id="attach-editor"></button>
+        </div>
+        <div class="info">
             <div>
                 moroboxai-game-sdk v<span
                     id="moroboxai-game-sdk-version"
-                ></span>
-            </div>
-            <div>
-                moroboxai-player-sdk v<span
-                    id="moroboxai-player-sdk-version"
                 ></span>
             </div>
             <div>
@@ -36,16 +25,10 @@
                 ></span>
             </div>
             <div>
-                moroboxai-editor-sdk v<span
-                    id="moroboxai-editor-sdk-version"
-                ></span>
-            </div>
-            <div>
                 moroboxai-editor-web v<span
                     id="moroboxai-editor-web-version"
                 ></span>
             </div>
-            <div>piximoroxel8ai v<span id="piximoroxel8ai-version"></span></div>
         </div>
     </body>
     
@@ -78,9 +61,13 @@
             margin-right: 2em;
         }
 
-        #info {
+        .info {
             margin-top: 2em;
             text-align: center;
+        }
+
+        .info button ~ button {
+            margin-left: 1em;
         }
     </style>
 </html>
