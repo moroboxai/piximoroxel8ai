@@ -9,8 +9,33 @@ export interface AssetHeader {
     path?: string;
 }
 
+/**
+ * Parameters passed to the entrypoint of the game.
+ *
+ * Those parameters are passed by PixiMoroxel8AI when booting the
+ * game specified in the header.
+ */
+export interface IMainOptions {
+    vm: IPixiMoroxel8AI;
+    stage: PIXI.Container;
+    PIXI: typeof PIXI;
+}
+
+/**
+ * Entrypoint of the game.
+ *
+ * Passing the entrypoint in code can be useful in development mode,
+ * where the default behavior of PixiMoroxel8AI, of making a big
+ * eval of the main file of the game, could cause issues with imports
+ * and exports.
+ */
+export interface IMain {
+    (options: IMainOptions): IGame;
+}
+
 export interface ExtendedGameHeader extends MoroboxAIGameSDK.GameHeader {
-    main?: string;
+    // Main file or function used as the entrypoint for the game
+    main?: string | IMain;
     // Desired aspect ratio based on the native resolution of PixiMoroxel8AI
     aspectRatio?: string;
 }
@@ -52,7 +77,11 @@ export interface IGame {
     // Get the game state for an agent
     getStateForAgent?: () => object;
     // Tick the game
-    tick?: (inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number, render: boolean) => void;
+    tick?: (
+        inputs: Array<MoroboxAIGameSDK.IInputs>,
+        delta: number,
+        render: boolean
+    ) => void;
 }
 
 const GAME_FUNCTIONS = [
@@ -83,6 +112,17 @@ function loadGame(
         if (main === undefined) {
             return reject(
                 "header is missing main attribute with the path to your main script"
+            );
+        }
+
+        if (typeof main === "function") {
+            // User passed a function acting as the entrypoint of the game
+            return resolve(
+                main({
+                    vm,
+                    stage: vm.stage,
+                    PIXI: vm.PIXI
+                })
             );
         }
 
@@ -245,21 +285,18 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         let screenHeight = constants.SCREEN_HEIGHT;
         const aspectRatio = this.header.aspectRatio;
         if (aspectRatio !== undefined) {
-            const [a, b] = aspectRatio.split("/").map(s => parseInt(s));
+            const [a, b] = aspectRatio.split("/").map((s) => parseInt(s));
             console.log(`desired ratio ${a}/${b} = ${a / b}`);
             if (a >= b) {
-                screenHeight = Math.round(screenWidth * b / a);
+                screenWidth = Math.round((screenHeight * a) / b);
             } else {
-                screenWidth = Math.round(screenHeight * a / b);
+                screenHeight = Math.round((screenWidth * b) / a);
             }
         }
 
         console.log(`game size ${screenWidth}x${screenHeight}`);
 
-        this._backBuffer = new BackBuffer(
-            screenWidth,
-            screenHeight
-        );
+        this._backBuffer = new BackBuffer(screenWidth, screenHeight);
         this._backStage = new PIXI.Container();
 
         this._clearSprite = new PIXI.Sprite(PIXI.Texture.WHITE);
@@ -289,7 +326,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
      */
     _initPixiJS() {
         // attach PIXI view to root HTML element
-        this._player.root.appendChild(this._app.view);
+        this._player.root.appendChild(this._app.view as any);
     }
 
     // Physics loop
@@ -381,7 +418,11 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
             : {};
     }
 
-    tick(inputs: Array<MoroboxAIGameSDK.IInputs>, delta: number, render: boolean) {
+    tick(
+        inputs: Array<MoroboxAIGameSDK.IInputs>,
+        delta: number,
+        render: boolean
+    ) {
         if (this._game?.tick !== undefined) {
             try {
                 this._game?.tick(inputs, delta, render);
@@ -396,7 +437,7 @@ class PixiMoroxel8AI implements MoroboxAIGameSDK.IGame, IPixiMoroxel8AI {
         if (!render) {
             return;
         }
-        
+
         // Render the back stage to back buffer
         if (this.autoClearBackBuffer) {
             this._app.renderer.render(
