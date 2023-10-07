@@ -123,18 +123,13 @@ function loadGame(
     gameServer: MoroboxAIGameSDK.IGameServer
 ): Promise<IGame> {
     // Override the main from header
-    if (pixiMoroxel8AI.options.main !== undefined) {
-        pixiMoroxel8AI.header.main = pixiMoroxel8AI.options.main;
-    }
-
-    const main = pixiMoroxel8AI.header.main;
+    const main = pixiMoroxel8AI.options.main ?? pixiMoroxel8AI.header.main;
     if (main === undefined) {
         throw "header is missing main attribute with the path to your main script";
     }
 
     if (typeof main === "function") {
         // User passed a function acting as the entrypoint of the game
-        console.log("main passed from code");
         return main({
             vm: pixiMoroxel8AI,
             stage: pixiMoroxel8AI.stage,
@@ -171,25 +166,22 @@ function initGame(
     pixiMoroxel8AI: PixiMoroxel8AI,
     gameServer: MoroboxAIGameSDK.IGameServer
 ): Promise<IGame> {
-    return new Promise<IGame>((resolve) => {
+    return new Promise<IGame>(async (resolve) => {
         // first load and parse the game
-        return loadGame(pixiMoroxel8AI, gameServer).then((game: IGame) => {
-            console.log("loaded game with hooks", game);
+        const game = await loadGame(pixiMoroxel8AI, gameServer);
+        console.log("loaded game with hooks", game);
 
-            // init the game
-            if (game.init !== undefined) {
-                game.init(pixiMoroxel8AI);
-            }
+        // init the game
+        if (game.init !== undefined) {
+            game.init(pixiMoroxel8AI);
+        }
 
-            // load game assets
-            if (game.load !== undefined) {
-                return game.load().then(() => {
-                    resolve(game);
-                });
-            }
+        // load game assets
+        if (game.load !== undefined) {
+            await game.load();
+        }
 
-            return resolve(game);
-        });
+        return resolve(game);
     });
 }
 
@@ -273,7 +265,6 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     }
 
     get header(): GameHeader {
-        console.log(this._vm?.header);
         return this._vm?.header! as GameHeader;
     }
 
@@ -299,7 +290,7 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     boot: MoroboxAIGameSDK.BootFunction = (
         options: MoroboxAIGameSDK.BootOptions
     ): Promise<MoroboxAIGameSDK.IGame> => {
-        return new Promise<MoroboxAIGameSDK.IGame>((resolve) => {
+        return new Promise<MoroboxAIGameSDK.IGame>(async (resolve) => {
             // At this point the header has been loaded
             this._bootOptions = options;
             this._vm = options.vm;
@@ -322,40 +313,16 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
             this.backBuffer.resize(screenWidth, screenHeight);
 
             // Boot the game
-            return this._bootGame().then(() => {
-                // Resize to desired game size
-                this.resize();
-                return resolve(this);
-            });
+            this._game = await initGame(this, this._vm.gameServer);
+
+            // Attach PIXI view to root element
+            this._vm.root.appendChild(this._app.view as any);
+
+            // Resize to desired game size
+            this.resize();
+            return resolve(this);
         });
     };
-
-    /**
-     * Load and initialize the game.
-     */
-    private _bootGame(): Promise<IGame> {
-        return new Promise<IGame>(async (resolve) => {
-            if (this._vm === undefined) {
-                throw "VM not defined";
-            }
-
-            // init the game and load assets
-            this._game = await initGame(this, this._vm.gameServer);
-            this._initPixiJS();
-
-            return resolve(this._game);
-        });
-    }
-
-    /**
-     * Initialize the PixiJS application.
-     */
-    _initPixiJS() {
-        // attach PIXI view to root HTML element
-        if (this._vm !== undefined) {
-            this._vm.root.appendChild(this._app.view as any);
-        }
-    }
 
     // Physics loop
     private _tick(delta: number) {
