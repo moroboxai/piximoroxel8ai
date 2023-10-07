@@ -59,27 +59,31 @@ export interface IPixiMoroxel8AI
  * This interface is meant to be known and used from games.
  */
 export interface IVM {
-    // Header of the game
-    readonly header: GameHeader;
+    // Game server
+    readonly gameServer: MoroboxAIGameSDK.IGameServer;
     // The pixi.js module
     readonly PIXI: typeof PIXI;
     // Screen width
-    readonly SWIDTH: number;
+    readonly width: number;
     // Screen height
-    readonly SHEIGHT: number;
-    // Instance of the player
-    readonly player: MoroboxAIGameSDK.IPlayer;
+    readonly height: number;
     // Root container
     readonly stage: PIXI.Container;
     // Renderer of pixi.js
     readonly renderer: PIXI.Renderer;
     // Back buffer rendered to screen
     readonly backBuffer: PIXI.RenderTexture;
+    // Current frame
+    readonly frame: number;
+    // Current time
+    readonly time: number;
     // Auto clear the back buffer before each render
     autoClearBackBuffer: boolean;
 }
 
-// The game when loaded
+/**
+ * Interface for a game to be compatible with PixiMoroxel8AI.
+ */
 export interface IGame {
     // Initialize the game
     init?: (vm: IVM) => void;
@@ -93,7 +97,7 @@ export interface IGame {
     getStateForAgent?: () => object;
     // Tick the game
     tick?: (
-        inputs: Array<MoroboxAIGameSDK.Inputs>,
+        controllers: Array<MoroboxAIGameSDK.Controller>,
         delta: number,
         render: boolean
     ) => void;
@@ -110,75 +114,71 @@ const GAME_FUNCTIONS = [
 
 /**
  * Load the game indicated in header.
- * @param {PixiMoroxel8AI} vm - instance of the PixiMoroxel8AI
+ * @param {PixiMoroxel8AI} pixiMoroxel8AI - instance of PixiMoroxel8AI
  * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server for accessing files
  * @returns {Promise} - loaded game
  */
 function loadGame(
-    vm: PixiMoroxel8AI,
+    pixiMoroxel8AI: PixiMoroxel8AI,
     gameServer: MoroboxAIGameSDK.IGameServer
 ): Promise<IGame> {
-    return new Promise<IGame>((resolve, reject) => {
-        // Override the main from header
-        if (vm.options.main !== undefined) {
-            vm.header.main = vm.options.main;
-        }
+    // Override the main from header
+    if (pixiMoroxel8AI.options.main !== undefined) {
+        pixiMoroxel8AI.header.main = pixiMoroxel8AI.options.main;
+    }
 
-        const main = vm.header.main;
-        if (main === undefined) {
-            return reject(
-                "header is missing main attribute with the path to your main script"
-            );
-        }
+    const main = pixiMoroxel8AI.header.main;
+    if (main === undefined) {
+        throw "header is missing main attribute with the path to your main script";
+    }
 
-        if (typeof main === "function") {
-            // User passed a function acting as the entrypoint of the game
-            return resolve(
-                main({
-                    vm,
-                    stage: vm.stage,
-                    PIXI: vm.PIXI
-                })
-            );
-        }
-
-        // use the game server to download main script
-        return gameServer.get(main).then((data) => {
-            // parse the main script to JavaScript
-            let game: IGame = {};
-            new Function(
-                "vm",
-                "stage",
-                "PIXI",
-                "exports",
-                `${data}\n; ${GAME_FUNCTIONS.map(
-                    (name) =>
-                        `if (typeof ${name} !== "undefined") exports.${name} = ${name}`
-                ).join(";")}`
-            )(vm, vm.stage, vm.PIXI, game);
-            return resolve(game);
+    if (typeof main === "function") {
+        // User passed a function acting as the entrypoint of the game
+        console.log("main passed from code");
+        return main({
+            vm: pixiMoroxel8AI,
+            stage: pixiMoroxel8AI.stage,
+            PIXI: pixiMoroxel8AI.PIXI
         });
+    }
+
+    // use the game server to download main script
+    return gameServer.get(main).then((data) => {
+        // parse the main script to JavaScript
+        console.log("load main from script");
+        let game: IGame = {};
+        new Function(
+            "vm",
+            "stage",
+            "PIXI",
+            "exports",
+            `${data}\n; ${GAME_FUNCTIONS.map(
+                (name) =>
+                    `if (typeof ${name} !== "undefined") exports.${name} = ${name}`
+            ).join(";")}`
+        )(pixiMoroxel8AI, pixiMoroxel8AI.stage, pixiMoroxel8AI.PIXI, game);
+        return game;
     });
 }
 
 /**
  * Load and initialize the game.
- * @param {MoroboxAIGameSDK.IPlayer} player - instance of the player
  * @param {PixiMoroxel8AI} vm - instance of PixiMoroxel8AI
+ * @param {MoroboxAIGameSDK.IGameServer} gameServer - game server
  * @returns {Promise} - game instance
  */
 function initGame(
-    player: MoroboxAIGameSDK.IPlayer,
-    vm: PixiMoroxel8AI
+    pixiMoroxel8AI: PixiMoroxel8AI,
+    gameServer: MoroboxAIGameSDK.IGameServer
 ): Promise<IGame> {
     return new Promise<IGame>((resolve) => {
         // first load and parse the game
-        return loadGame(vm, player.gameServer).then((game: IGame) => {
+        return loadGame(pixiMoroxel8AI, gameServer).then((game: IGame) => {
             console.log("loaded game with hooks", game);
 
             // init the game
             if (game.init !== undefined) {
-                game.init(vm.proxy);
+                game.init(pixiMoroxel8AI);
             }
 
             // load game assets
@@ -207,57 +207,6 @@ class BackBuffer {
 }
 
 /**
- * Proxy of the VM for access from games.
- */
-class VMProxy implements IVM {
-    private _vm: IVM;
-
-    constructor(vm: IVM) {
-        this._vm = vm;
-    }
-
-    get header(): GameHeader {
-        return this._vm.header;
-    }
-
-    get PIXI(): typeof PIXI {
-        return this._vm.PIXI;
-    }
-
-    get SWIDTH(): number {
-        return this._vm.SWIDTH;
-    }
-
-    get SHEIGHT(): number {
-        return this._vm.SHEIGHT;
-    }
-
-    get player(): MoroboxAIGameSDK.IPlayer {
-        return this._vm.player;
-    }
-
-    get stage(): PIXI.Container {
-        return this._vm.stage;
-    }
-
-    get renderer(): PIXI.Renderer {
-        return this._vm.renderer;
-    }
-
-    get backBuffer(): PIXI.RenderTexture {
-        return this._vm.backBuffer;
-    }
-
-    get autoClearBackBuffer(): boolean {
-        return this._vm.autoClearBackBuffer;
-    }
-
-    set autoClearBackBuffer(value: boolean) {
-        this._vm.autoClearBackBuffer = value;
-    }
-}
-
-/**
  * Possible modes for running PixiMoroxel8AI.
  */
 export type Mode = "development" | "production";
@@ -276,11 +225,10 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     // Options for PixiMoroxel8AI.
     readonly options: PixiMoroxel8AIOptions;
     private _bootOptions?: MoroboxAIGameSDK.BootOptions;
-    // Instance of the player
-    private _player?: MoroboxAIGameSDK.IPlayer;
+    // Instance of the VM embedding PixiMoroxel8AI
+    private _vm?: MoroboxAIGameSDK.IVM;
     // Instance of the game
     private _game?: IGame;
-    readonly proxy: IVM;
     private _app: PIXI.Application;
     private _backBuffer: BackBuffer;
     private _backStage: PIXI.Container;
@@ -293,7 +241,6 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
 
     constructor(options?: PixiMoroxel8AIOptions) {
         this.options = options ?? {};
-        this.proxy = new VMProxy(this);
         PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 
         // Create the app
@@ -325,6 +272,11 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
         }
     }
 
+    get header(): GameHeader {
+        console.log(this._vm?.header);
+        return this._vm?.header! as GameHeader;
+    }
+
     /**
      * Hook the API provided by PixiMoroxel8AI.
      *
@@ -350,7 +302,7 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
         return new Promise<MoroboxAIGameSDK.IGame>((resolve) => {
             // At this point the header has been loaded
             this._bootOptions = options;
-            this._player = options.player;
+            this._vm = options.vm;
 
             // Adapt the format
             let screenWidth = constants.SCREEN_WIDTH;
@@ -378,21 +330,20 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
         });
     };
 
-    // Load and initialize the game
-    _bootGame(): Promise<IGame> {
-        return new Promise<IGame>((resolve, reject) => {
-            if (this._player === undefined) {
-                return reject("player not defined");
+    /**
+     * Load and initialize the game.
+     */
+    private _bootGame(): Promise<IGame> {
+        return new Promise<IGame>(async (resolve) => {
+            if (this._vm === undefined) {
+                throw "VM not defined";
             }
 
             // init the game and load assets
-            initGame(this._player, this).then((game: IGame) => {
-                // loaded the game
-                this._game = game;
-                this._initPixiJS();
+            this._game = await initGame(this, this._vm.gameServer);
+            this._initPixiJS();
 
-                return resolve(game);
-            });
+            return resolve(this._game);
         });
     }
 
@@ -401,8 +352,8 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
      */
     _initPixiJS() {
         // attach PIXI view to root HTML element
-        if (this._player !== undefined) {
-            this._player.root.appendChild(this._app.view as any);
+        if (this._vm !== undefined) {
+            this._vm.root.appendChild(this._app.view as any);
         }
     }
 
@@ -464,20 +415,20 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     }
 
     resize(): void {
-        if (this._player === undefined) {
+        if (this._vm === undefined) {
             return;
         }
 
         // Scale the game view according to parent div
         const resolution = 1;
-        const realWidth = this._player.width;
-        const realHeight = this._player.height;
+        const realWidth = this._vm.width;
+        const realHeight = this._vm.height;
 
         this._app.renderer.resolution = resolution;
         this._app.renderer.resize(realWidth, realHeight);
         this._backBuffer.sprite.scale.set(
-            realWidth / this.SWIDTH,
-            realHeight / this.SHEIGHT
+            realWidth / this.width,
+            realHeight / this.height
         );
     }
 
@@ -500,13 +451,13 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     }
 
     tick(
-        inputs: Array<MoroboxAIGameSDK.Inputs>,
+        controllers: Array<MoroboxAIGameSDK.Controller>,
         delta: number,
         render: boolean
     ) {
         if (this._game?.tick !== undefined) {
             try {
-                this._game?.tick(inputs, delta, render);
+                this._game?.tick(controllers, delta, render);
             } catch (e) {
                 if (!this._displayedTickError) {
                     this._displayedTickError = true;
@@ -533,24 +484,12 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     }
 
     // IPixiMoroxel8AI interface
-    get header(): GameHeader {
-        return this.player.header as GameHeader;
+    get gameServer(): MoroboxAIGameSDK.IGameServer {
+        return this._vm!.gameServer;
     }
 
     get PIXI(): typeof PIXI {
         return PIXI;
-    }
-
-    get SWIDTH(): number {
-        return this._backBuffer.buffer.width;
-    }
-
-    get SHEIGHT(): number {
-        return this._backBuffer.buffer.height;
-    }
-
-    get player(): MoroboxAIGameSDK.IPlayer {
-        return this._player!;
     }
 
     get stage(): PIXI.Container {
@@ -563,6 +502,14 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
 
     get backBuffer(): PIXI.RenderTexture {
         return this._backBuffer.buffer;
+    }
+
+    get frame(): number {
+        return this._vm!.frame;
+    }
+
+    get time(): number {
+        return this._vm!.time;
     }
 }
 
