@@ -1,6 +1,6 @@
 {
     "name": "piximoroxel8ai",
-    "version": "0.1.0-alpha.23",
+    "version": "0.1.0-alpha.24",
     "description": "Run PixiJS games written for MoroboxAI",
     "author": "moroboxai",
     "main": "./lib/cjs/index.cjs",
@@ -26,16 +26,13 @@
     },
     "homepage": "https://github.com/moroboxai/piximoroxel8ai#readme",
     "peerDependencies": {
-        "pixi.js": "^5.3.12"
+        "pixi.js": "^5.3.3"
     },
     "dependencies": {
         "moroboxai-game-sdk": "^0.1.0-alpha.35",
-        "pixi.js": "^5.3.12"
+        "pixi.js": "^5.3.3"
     },
     "devDependencies": {
-        "@pixi/constants": "^7.3.1",
-        "@pixi/core": "^7.3.1",
-        "@pixi/math": "^7.3.1",
         "@types/css-font-loading-module": "^0.0.9",
         "@types/node": "^20.6.2",
         "moroboxai-editor-web": "^0.1.1-alpha.6",
