@@ -141,17 +141,26 @@ function loadGame(
     return gameServer.get(main).then((data) => {
         // parse the main script to JavaScript
         console.log("load main from script");
-        let game: IGame = {};
+        const game: IGame = {};
+        const module = { exports: { boot: undefined } };
+
         new Function(
             "vm",
             "stage",
             "PIXI",
             "exports",
+            "module",
             `${data}\n; ${GAME_FUNCTIONS.map(
                 (name) =>
                     `if (typeof ${name} !== "undefined") exports.${name} = ${name}`
             ).join(";")}`
-        )(pixiMoroxel8AI, pixiMoroxel8AI.stage, pixiMoroxel8AI.PIXI, game);
+        )(
+            pixiMoroxel8AI,
+            pixiMoroxel8AI.stage,
+            pixiMoroxel8AI.PIXI,
+            game,
+            module
+        );
         return game;
     });
 }
