@@ -304,7 +304,7 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
             this._bootOptions = options;
             this._vm = options.vm;
 
-            // Adapt the format
+            // Adapt the native resolution to aspect ratio defined in header
             let screenWidth = constants.SCREEN_WIDTH;
             let screenHeight = constants.SCREEN_HEIGHT;
             const aspectRatio = this.header.aspectRatio;
@@ -317,6 +317,13 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
                     screenHeight = Math.round((screenWidth * b) / a);
                 }
             }
+
+            // Set the width and height in header for MoroboxAIPlayer
+            this.header.width = screenWidth;
+            this.header.height = screenHeight;
+
+            // The scale of PixiMoroxel8AI games is fixed
+            this.header.scale = constants.SCREEN_SCALE;
 
             console.log(`game size ${screenWidth}x${screenHeight}`);
             this.backBuffer.resize(screenWidth, screenHeight);
