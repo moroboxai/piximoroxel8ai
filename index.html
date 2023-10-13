@@ -43,9 +43,6 @@
         import * as MoroboxAIEditor from "moroboxai-editor-web";
         import * as PixiMoroxel8AI from "./src/index.ts";
 
-        // Hack for MoroboxAIPlayer to detect PixiMoroxel8AI
-        window.PixiMoroxel8AI = PixiMoroxel8AI;
-
         document.getElementById("moroboxai-game-sdk-version").innerText =
             MoroboxAIPlayer.GAME_SDK_VERSION;
         document.getElementById("moroboxai-player-web-version").innerText =
@@ -67,9 +64,10 @@
                     // Options for the player
                     {
                         url: "https://raw.githubusercontent.com/moroboxai/create-moroboxai-game/master/examples/piximoroxel8ai-sample/header-js.yml",
+                        boot: PixiMoroxel8AI,
+                        width: "100%",
                         resizable: true,
                         autoPlay: true,
-                        scale: 1,
                         onReady: () => console.log("ready")
                     }
                 );

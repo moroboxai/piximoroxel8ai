@@ -327,6 +327,8 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
 
             console.log(`game size ${screenWidth}x${screenHeight}`);
             this.backBuffer.resize(screenWidth, screenHeight);
+            this._clearSprite.width = screenWidth;
+            this._clearSprite.height = screenHeight;
 
             // Boot the game
             this._game = await initGame(this, this._vm.gameServer);
