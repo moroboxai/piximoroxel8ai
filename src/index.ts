@@ -406,14 +406,23 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
 
         // Scale the game view according to parent div
         const resolution = 1;
+        const gameWidth = this.width;
+        const gameHeight = this.height;
         const realWidth = this._vm.width;
         const realHeight = this._vm.height;
 
+        let adaptedWidth = (gameWidth * realHeight) / gameHeight;
+        let adaptedHeight = realHeight;
+        if (adaptedWidth > realWidth) {
+            adaptedHeight = (gameHeight * realWidth) / gameWidth;
+            adaptedWidth = realWidth;
+        }
+
         this._app.renderer.resolution = resolution;
-        this._app.renderer.resize(realWidth, realHeight);
+        this._app.renderer.resize(adaptedWidth, adaptedHeight);
         this._backBuffer.sprite.scale.set(
-            realWidth / this.width,
-            realHeight / this.height
+            adaptedWidth / gameWidth,
+            adaptedHeight / gameHeight
         );
     }
 
