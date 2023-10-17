@@ -12,8 +12,6 @@ export const VERSION = "__VERSION__";
  */
 export interface MainOptions {
     vm: IVM;
-    stage: PIXI.Container;
-    PIXI: typeof PIXI;
 }
 
 /**
@@ -90,9 +88,13 @@ export interface IGame {
     // Load the game assets
     load?: () => Promise<void>;
     // Save the state of the game
-    saveState?: () => object;
-    // Load the state of the game
-    loadState?: (state: object) => void;
+    saveState?: () => MoroboxAIGameSDK.GameSaveState;
+    /**
+     * Load the state of the game.
+     *
+     * When state is undefined, the game should reset itself.
+     */
+    loadState?: (state?: MoroboxAIGameSDK.GameSaveState) => void;
     // Get the game state for an agent
     getStateForAgent?: () => object;
     // Tick the game
@@ -131,9 +133,7 @@ function loadGame(
     if (typeof main === "function") {
         // User passed a function acting as the entrypoint of the game
         return main({
-            vm: pixiMoroxel8AI,
-            stage: pixiMoroxel8AI.stage,
-            PIXI: pixiMoroxel8AI.PIXI
+            vm: pixiMoroxel8AI
         });
     }
 
@@ -225,7 +225,6 @@ export interface PixiMoroxel8AIOptions {
 class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     // Options for PixiMoroxel8AI.
     readonly options: PixiMoroxel8AIOptions;
-    private _bootOptions?: MoroboxAIGameSDK.BootOptions;
     // Instance of the VM embedding PixiMoroxel8AI
     private _vm?: MoroboxAIGameSDK.IVM;
     // Instance of the game
@@ -301,7 +300,6 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
     ): Promise<MoroboxAIGameSDK.IGame> => {
         return new Promise<MoroboxAIGameSDK.IGame>(async (resolve) => {
             // At this point the header has been loaded
-            this._bootOptions = options;
             this._vm = options.vm;
 
             // Adapt the native resolution to aspect ratio defined in header
@@ -312,9 +310,9 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
                 const [a, b] = aspectRatio.split("/").map((s) => parseInt(s));
                 console.log(`desired ratio ${a}/${b} = ${a / b}`);
                 if (a >= b) {
-                    screenWidth = Math.round((screenHeight * a) / b);
+                    screenWidth = Math.ceil((screenHeight * a) / b);
                 } else {
-                    screenHeight = Math.round((screenWidth * b) / a);
+                    screenHeight = Math.ceil((screenWidth * b) / a);
                 }
             }
 
@@ -426,13 +424,13 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
         );
     }
 
-    saveState(): object {
+    saveState(): MoroboxAIGameSDK.GameSaveState {
         return this._game?.saveState !== undefined
-            ? this._game?.saveState()
-            : {};
+            ? this._game.saveState()
+            : { isGameOver: false };
     }
 
-    loadState(state: object) {
+    loadState(state?: MoroboxAIGameSDK.GameSaveState) {
         if (this._game?.loadState !== undefined) {
             this._game?.loadState(state);
         }
@@ -477,7 +475,7 @@ class PixiMoroxel8AI implements IPixiMoroxel8AI, IVM {
         this._app.renderer.render(this._backBuffer.sprite);
     }
 
-    // IPixiMoroxel8AI interface
+    // IVM interface
     get gameServer(): MoroboxAIGameSDK.IGameServer {
         return this._vm!.gameServer;
     }
@@ -538,3 +536,10 @@ export const boot: MoroboxAIGameSDK.BootFunction = (
         });
     });
 };
+
+/**
+ * Declare the API for games.
+ */
+declare global {
+    const vm: IVM;
+}
